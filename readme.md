@@ -40,7 +40,7 @@ $ make build
 ```
 
 ## Run Shiro
-This command will build/rebuild the OS on docker and will run the it using QEMU.
+This command will build/rebuild the OS on docker and will run it using QEMU.
 ```shell
 $ make run
 ```
