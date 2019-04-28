@@ -7,7 +7,7 @@
 ## How to start?
 If you are using windows, make sure all files are LF instead of CRLF. 
 
-You can disable CRLF on Git by doing:
+You can disable CRLF on Git by doing **(optional)**:
 ```shell
 $ git config --global core.safecrlf false
 $ git config --global core.autocrlf false
