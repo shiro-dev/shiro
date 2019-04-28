@@ -19,5 +19,7 @@ COPY ./install /docker-install
 RUN echo "INSTALL i686 ELF CROSS-COMPILER"
 RUN bash /docker-install/install.sh
 
+#CMD cp /docker-install/i686-elf-tools-linux.zip /install/i686-elf-tools-linux.zip
+
 RUN echo "DONE"
 WORKDIR /home/shiro
