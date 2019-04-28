@@ -1,6 +1,6 @@
 build:
 	docker network ls | grep "shiro" || $(MAKE) -s create-network; exit 0
-	docker-compose build
+	docker-compose build --no-cache
 	docker-compose up -d
 
 run:
