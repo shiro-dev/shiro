@@ -1,0 +1,9 @@
+.vscode/
+hyperv/
+install/binutils-2.31.1/
+src/bin/*.bin
+src/bin/*.iso
+src/lib/*.o
+*.code-workspace
+i686-elf-tools-windows.zip
+i686-elf-tools-linux.zip

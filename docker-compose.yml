@@ -1,0 +1,17 @@
+version: '3.4'
+
+### Services
+services:
+  shiro:
+    container_name: shiro
+    build:
+      context: ./
+    volumes:
+      - ./src/:/home/shiro
+      - ./install/:/install
+
+### Networks
+networks:
+  default:
+    external:
+      name: shiro-network
