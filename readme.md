@@ -5,8 +5,17 @@
 ![Shiro - Operating System (OS)](http://nimbleking.com/shiro/images/shiro.bmp)
 
 ## How to start?
+If you are using windows, make sure all files are LF instead of CRLF. 
+
+You can disable CRLF on Git by doing:
 ```shell
-$ git clone https://github.com/shiro-dev/shiro.git
+$ git config --global core.safecrlf false
+$ git config --global core.autocrlf false
+```
+
+To clone the project:
+```shell
+$ git clone git@github.com:shiro-dev/shiro.git
 ```
 
 ## Requirements
