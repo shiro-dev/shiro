@@ -9,6 +9,7 @@ services:
     volumes:
       - ./src/:/home/shiro
       - ./install/:/install
+      - ./:/everything
 
 ### Networks
 networks:

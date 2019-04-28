@@ -1,6 +1,13 @@
 # Shiro - Operating System (OS)
 
+![](https://img.shields.io/badge/Version-v0.1-green.svg)
+
 ![Shiro - Operating System (OS)](http://nimbleking.com/shiro/images/shiro.bmp)
+
+## How to start?
+```shell
+$ git clone https://github.com/shiro-dev/shiro.git
+```
 
 ## Requirements
 
