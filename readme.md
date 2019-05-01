@@ -7,6 +7,8 @@
 <br/>
 
 <img src="https://img.shields.io/badge/Version-v0.2-green.svg" alt="Version">
+&nbsp;
+<img src="https://img.shields.io/badge/Date-2019/05/01-green.svg" alt="Version">
 
 </p>
 
