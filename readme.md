@@ -1,8 +1,14 @@
 # Shiro - Operating System (OS)
 
-![](https://img.shields.io/badge/Version-v0.1-green.svg)
+<p align="center">
 
-![Shiro - Operating System (OS)](http://nimbleking.com/shiro/images/shiro.bmp)
+<img src="http://nimbleking.com/shiro/images/shiro.bmp" alt="Shiro - Operating System (OS)"/>
+
+<br/>
+
+<img src="https://img.shields.io/badge/Version-v0.2-green.svg" alt="Version">
+
+</p>
 
 ## How to start?
 If you are using windows, make sure all files are LF instead of CRLF. 
@@ -52,7 +58,7 @@ $ sudo chmod +x /usr/local/bin/docker-compose
 ## Build Environment
 This command will build the development environment on docker.
 ```shell
-$ make build
+$ make docker-build
 ```
 
 ## Run Shiro
@@ -60,3 +66,20 @@ This command will build/rebuild the OS on docker and will run it using QEMU.
 ```shell
 $ make run
 ```
+
+## Special Thanks
+- [OSDev.org](https://osdev.org/)
+- [OSDev Forum](https://forum.osdev.org/)
+- [GNU](https://www.gnu.org/)
+- [Free Software Foundation](https://www.fsf.org/pt-br)
+- [Philipp Oppermann](https://os.phil-opp.com/)
+- [Leo Whitehead](https://medium.com/@lduck11007)
+- [Hacker Pulp](https://hackerpulp.com/)
+- [Eugene Obrezkov](https://blog.ghaiklor.com/how-to-implement-your-own-hello-world-boot-loader-c0210ef5e74b)
+- [Mike Saunders](http://mikeos.sourceforge.net/)
+- [Computer Tyme](http://www.ctyme.com/)
+- [Napalm](http://www.rohitab.com/discuss/user/3860-napalm/)
+- [Yoshinori K. Okuji](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
+- [Bryan Ford](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
+- [Erich Stefan Boleyn](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
+- [Kunihiro Ishiguro](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)

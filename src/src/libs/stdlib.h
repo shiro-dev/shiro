@@ -1,3 +1,6 @@
+#ifndef STDLIB_H
+#define STDLIB_H
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -20,9 +23,33 @@ size_t strlen(const char* str){
     return len;
 }
 
+size_t strlen(uint32_t* str){
+    size_t len = 0;
+    while (str[len])
+        len++;
+    return len;
+}
+
 void delay(float t){   
     volatile int i,j;
+    __asm__("cli");
     for(i=0;i<t;i++)
         for(j=0;j<250000;j++)
             __asm__("NOP");
 }
+
+char* int2char(int val){
+    int base = 10;
+    static char buf[32] = {0};
+
+    int i = 30;
+
+    for(; val && i ; --i, val /= base)
+
+        buf[i] = "0123456789abcdef"[val % base];
+
+    return &buf[i+1];
+
+}
+
+#endif

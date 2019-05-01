@@ -1,3 +1,6 @@
+#ifndef CONSOLE_H
+#define CONSOLE_H
+
 size_t console_row;
 size_t console_column;
 uint8_t console_colour;
@@ -68,3 +71,5 @@ void console_writeint(unsigned long n){
         console_writeint(n/10);
     console_putchar((n % 10) + '0');
 }
+
+#endif

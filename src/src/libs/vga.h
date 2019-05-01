@@ -1,3 +1,6 @@
+#ifndef VGA_H
+#define VGA_H
+
 /* Hardware text mode color constants. */
 enum vga_colour {
     VGA_COLOUR_BLACK,
@@ -28,3 +31,5 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color){
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
+
+#endif
