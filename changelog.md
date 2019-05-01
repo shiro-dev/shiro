@@ -1,9 +1,5 @@
 # Changelog
 
-## [v0.3] - 2019-00-00
-
-- ...
-
 ## [v0.2] - 2019-05-01
 - New file structure
 - New namespaces, classes, methods, and functions
