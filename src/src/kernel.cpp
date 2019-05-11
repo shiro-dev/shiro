@@ -1,27 +1,41 @@
 #include <helper/debug.h>
-#include <helper/php.h>
-#include "classes/shiro.class.h"
+#include "shiro.class.h"
+
+// Instantiate the System::Shiro class
+System::Shiro shiro;
+
+/**
+ * loop()
+ *
+ * Here we can place routines that are going to run on loop once the whole OS is loaded.
+ * 
+ * @return void
+ */
+void loop()
+{
+    while (true)
+    {
+        shiro.shell.Update();
+        delay(10);
+    }
+}
 
 /**
  * shiro_main()
  *
- * This function is called from boot.asm when the GRUB Bootloader has finished loading everything.
- * System::Shiro::Start() will act like a constructor, loading everything we need.
- * System::Shiro::Finish() will act like a destructor, running the finals routines before we finish the code.
- *
+ * This is the Shiro's entry point. 
+ * Once the whole boot is loaded, assembly will call this function.
+ * 
  * @return void
  */
-extern "C" void shiro_main() 
+extern "C" void shiro_main()
 {
-    // Instantiate the System::Shiro class
-    System::Shiro shiro;
-
     // Load Shiro starting method (construtor)
-    shiro.Start();
-
-    // Anything we want
-    // ...
+    shiro.Start(shiro);
 
     // Load Shiro finishing method (destructor)
-    shiro.Finish();
+    shiro.Finish(shiro);
+
+    // Call final loop
+    loop();
 }

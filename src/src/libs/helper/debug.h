@@ -3,16 +3,17 @@
 
 #include "debug.class.h"
 
-void log(const char* value)
-{
+template <typename Any>
+void log(Any content) {
     System::Debug debug;
-    debug.Log(value);
+    debug.Log(content);
 }
 
-void log(int value)
+template <typename Any, typename... Rest>
+void log(Any content, Rest... rest) 
 {
     System::Debug debug;
-    debug.Log(value);
+    debug.Log(content, rest...);
 }
 
 #endif

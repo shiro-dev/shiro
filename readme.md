@@ -1,4 +1,4 @@
-# Shiro - Operating System (OS)
+<h1 align="center">Shiro - Operating System (OS)</h3>
 
 <p align="center">
 
@@ -6,13 +6,13 @@
 
 <br/>
 
-<img src="https://img.shields.io/badge/Version-v0.2-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Version-v0.3-green.svg" alt="Version">
 &nbsp;
-<img src="https://img.shields.io/badge/Date-2019/05/01-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Date-2019/05/11-green.svg" alt="Version">
 
 </p>
 
-## How to start?
+## How to get started?
 If you are using windows, make sure all files are LF instead of CRLF. 
 
 You can disable CRLF on Git by doing **(optional)**:
@@ -85,3 +85,10 @@ $ make run
 - [Bryan Ford](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
 - [Erich Stefan Boleyn](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
 - [Kunihiro Ishiguro](http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf)
+- [Erik Helin](https://littleosbook.github.io/)
+- [Adam Renberg](https://littleosbook.github.io/)
+- [James Molloy](http://www.jamesmolloy.co.uk/)
+- [Samy Pessé](https://samypesse.gitbook.io/)
+- [Klaykap](https://github.com/Klaykap)
+- [Tu, Do Hoang](https://github.com/tuhdo/)
+- [Brandon F.](http://www.osdever.net/bkerndev/Docs/isrs.htm)

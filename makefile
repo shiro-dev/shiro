@@ -12,7 +12,7 @@ run:
 
 debug:
 	docker exec -it shiro bash -c "cd /home/shiro && ./build.sh"
-	qemu-system-i386 -s -S -boot order=d -cdrom src/bin/shiro.iso
+	qemu-system-i386 -boot order=d -cdrom src/bin/shiro.iso -chardev stdio,id=char0,logfile=src/log/serial.log,signal=off -serial chardev:char0
 
 docker-create-network:
 	docker network create shiro-network

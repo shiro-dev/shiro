@@ -3,7 +3,6 @@
 ; GLOBAL FUNCTIONS
 global shiro.start:function (shiro.end - shiro.start); Make shiro.start visible
 global grub
-global outb
 
 ; EXTERNAL FUNCTIONS
 extern shiro_main; Load shiro_main from c++
@@ -56,22 +55,26 @@ stack:
 section .shiro
 shiro:
 .start:
+    cli
 	mov esp, stack.top
     push ebx
+    push eax
 	call shiro_main
 .end: 
-	cli
 	hlt
-
-; outb - send a byte to an I/O port
-; stack: [esp + 8] the data byte
-;        [esp + 4] the I/O port
-;        [esp    ] return address
-outb:
-    mov al, [esp + 8]    ; move the data to be sent into the al register
-    mov dx, [esp + 4]    ; move the address of the I/O port into the dx register
-    out dx, al           ; send the data to the I/O port
-    ret                  ; return to the calling function
+    jmp shiro.end
 
 ; Include a Real Mode Switcher
 %include "real-mode-switcher.asm"
+
+; Include GDT
+%include "gdt.asm"
+
+; Include IDT
+%include "idt.asm"
+
+; Include ISR
+%include "isr.asm"
+
+; Include IO functions
+%include "io.asm"
