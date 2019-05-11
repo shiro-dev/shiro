@@ -25,6 +25,7 @@
 - Adding more names to the "Special Thanks" area on the readme file
 
 ## [v0.2] - 2019-05-01
+
 - New file structure
 - New namespaces, classes, methods, and functions
 - Debugging methods and functions
