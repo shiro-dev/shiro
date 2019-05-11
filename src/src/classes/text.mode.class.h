@@ -1,9 +1,6 @@
 #ifndef TEXT_MODE_CLASS_H
 #define TEXT_MODE_CLASS_H
 
-#include <vga.h>
-#include <console.h>
-
 /**
  * namespace System
  *
@@ -30,6 +27,11 @@ namespace System
             public:
 
                 /**
+                 * Vars
+                 */
+                uint16_t* screenAddr;
+
+                /**
                  * System::Modes::Text.Start()
                  *
                  * This is our pseudo constructor, a starting point.
@@ -37,11 +39,14 @@ namespace System
                  * 
                  * @return void
                  */
-                void Start()
+                void Start(auto& shiro)
                 {
-                    console_initialize();
-                    log("ENTERING TEXT MODE");
-                    log("--------------------------------------------------------------------------------");
+                    // Initializing VGA
+                    System::VGA vga;
+                    vga.Start(shiro);
+
+                    // Log
+                    log("> Entering Text Mode");
                 }
 
                 /**
@@ -52,10 +57,11 @@ namespace System
                  * 
                  * @return void
                  */
-                void Finish()
+                void Finish(auto& shiro)
                 {
-                    log("--------------------------------------------------------------------------------");
-                    log("EXITING TEXT MODE");
+                    // Log
+                    log("> Running Text Mode final routines");
+                    shiro.NotImplemented();
                 }
         };
     }

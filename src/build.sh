@@ -6,6 +6,7 @@ FOLDER_ASM="$FOLDER_SRC/boot/asm"
 FOLDER_LINKER="$FOLDER_SRC/boot/linker"
 FOLDER_CPP_LIBS="$FOLDER_SRC/libs"
 FOLDER_CPP_CLASSES="$FOLDER_SRC/classes"
+FOLDER_CPP_VENDOR="$FOLDER_SRC/vendor"
 
 echo $FOLDER_CPP_LIBS
 
@@ -17,8 +18,10 @@ FILE_KERNEL_BIN="$FOLDER_BIN/kernel.bin"
 FILES="$FOLDER_SRC/*/*.cpp"
 
 GCC="/docker-install/i686-elf-tools-linux/bin/i686-elf-g++"
-GCC_PARAMS="-ffreestanding -O2 -Wall -Wextra -I$FOLDER_CPP_LIBS -I$FOLDER_CPP_CLASSES"
-GCC_LINKER_PARAMS="-ffreestanding -O2 -nostdlib -I$FOLDER_CPP_LIBS -I$FOLDER_CPP_CLASSES"
+#GCC="/docker-install/cross-compiler-libsupcxx/bin/i686-elf-g++"
+#GCC="clang-7 -target i686-elf"
+GCC_PARAMS="-ffreestanding -O2 -Wall -Wextra -fconcepts -fpermissive -Wno-write-strings -Wno-uninitialized -nostdlib -lgcc -I$FOLDER_CPP_LIBS -I$FOLDER_CPP_CLASSES -I$FOLDER_CPP_VENDOR"
+GCC_LINKER_PARAMS="-ffreestanding -O2 -Wextra -fconcepts -fpermissive -Wno-write-strings -Wno-uninitialized -nostdlib -lgcc -I$FOLDER_CPP_LIBS -I$FOLDER_CPP_CLASSES -I$FOLDER_CPP_VENDOR"
 
 SEPARATOR="----------------------------------------------------------"
 LINEBREAK="\n\n"

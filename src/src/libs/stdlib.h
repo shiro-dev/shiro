@@ -18,8 +18,9 @@ void srand(unsigned int seed){
 
 size_t strlen(const char* str){
     size_t len = 0;
-    while (str[len])
+    while (str[len]){
         len++;
+    }
     return len;
 }
 
@@ -32,10 +33,11 @@ size_t strlen(uint32_t* str){
 
 void delay(float t){   
     volatile int i,j;
-    __asm__("cli");
-    for(i=0;i<t;i++)
-        for(j=0;j<250000;j++)
+    for(i=0;i<t;i++){
+        for(j=0;j<250000;j++){
             __asm__("NOP");
+        }
+    }
 }
 
 char* int2char(int val){
@@ -49,7 +51,15 @@ char* int2char(int val){
         buf[i] = "0123456789abcdef"[val % base];
 
     return &buf[i+1];
+}
 
+char* strcat( char* d, const char* s ) {
+  char* tmp = d;
+
+  while ( *d ) d++;
+  while ( ( *d++ = *s++ ) != 0 ) ;
+
+  return tmp;
 }
 
 #endif

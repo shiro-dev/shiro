@@ -4,7 +4,8 @@
 # v1.1
 
 BINUTILS_VERSION=2.28
-GCC_VERSION=7.1.0
+#GCC_VERSION=7.1.0
+GCC_VERSION=9.1.0
 GDB_VERSION=8.0
 
 BUILD_DIR="$HOME/build-i686-elf"
@@ -202,7 +203,7 @@ function compileGCC {
         mkdir -p build-gcc-$GCC_VERSION
         cd build-gcc-$GCC_VERSION
         
-        configureArgs="--target=i686-elf --disable-nls --enable-languages=c,c++ --without-headers --prefix=$BUILD_DIR/$1/output"
+        configureArgs="--target=i686-elf --disable-nls --enable-languages=c,c++,go --without-headers --prefix=$BUILD_DIR/$1/output"
         
         if [ $1 == "windows" ]
         then
