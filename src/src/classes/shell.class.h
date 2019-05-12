@@ -2,15 +2,26 @@
 #define SHELL_CLASS_H
 
 /**
- * namespace System
+ * namespace Applications
  *
- * This is our core namespace.
- * All system-related classes can be found on this namespace.
+ * This is the namespace for all our base applications.
+ * All application-related classes can be found on this namespace.
  */
-namespace System
+namespace Applications
 {
 class Shell
 {
+private:
+    /**
+     * This parameter will hold our instance.
+     */
+    static Applications::Shell *instance;
+
+    /**
+     * Adding a private contructor.
+     */
+    Shell(){};
+
 public:
     /**
      * Vars
@@ -21,7 +32,7 @@ public:
     uint16_t *screen;
     uint16_t *terminal_screen_header;
     uint16_t *terminal_screen_footer;
-    uint16_t *terminal_screens[10];
+    uint16_t *terminal_screens[10][3000];
     uint16_t current_terminal;
     uint16_t header_starting_point;
     uint16_t content_starting_point;
@@ -44,36 +55,46 @@ public:
     size_t footer_current_x;
     size_t footer_current_y;
 
-    System::Cursor cursor;
+    /**
+     * This parameter will set/return our current instance
+     */
+    static Applications::Shell *GetInstance()
+    {
+        if (instance == 0)
+        {
+            instance = new Applications::Shell();
+        }
+
+        return instance;
+    }
 
     /**
-     * System::Shell.Start(auto &shiro)
+     * Applications::Shell.Start()
      *
      * This is our pseudo constructor, a starting point.
      * 
      * @return void
      */
-    void Start(auto &shiro)
+    void Start()
     {
         // Log
-        log("> Starting Shell");
+        log("\n> Starting Shell");
 
-        // Vars
-        System::Modes::Text textMode;
+        // Get Shiro's Instance
+        System::Shiro *shiro = System::Shiro::GetInstance();
 
         // Colors
-        System::VGA::colors headerTextColor = System::VGA::colors::VGA_COLOUR_WHITE;
-        System::VGA::colors headerBackgroundColor = System::VGA::colors::VGA_COLOUR_BROWN;
-        System::VGA::colors terminalTextColor = System::VGA::colors::VGA_COLOUR_WHITE;
-        System::VGA::colors terminalBackgroundColor = System::VGA::colors::VGA_COLOUR_BLACK;
-        System::VGA::colors footerTextColor = System::VGA::colors::VGA_COLOUR_WHITE;
-        System::VGA::colors footerBackgroundColor = System::VGA::colors::VGA_COLOUR_BLACK;
+        System::VGA::colors headerTextColor = shiro->vga.VGA_COLOUR_WHITE;
+        System::VGA::colors headerBackgroundColor = shiro->vga.VGA_COLOUR_BROWN;
+        System::VGA::colors terminalTextColor = shiro->vga.VGA_COLOUR_WHITE;
+        System::VGA::colors terminalBackgroundColor = shiro->vga.VGA_COLOUR_BLACK;
+        System::VGA::colors footerTextColor = shiro->vga.VGA_COLOUR_WHITE;
+        System::VGA::colors footerBackgroundColor = shiro->vga.VGA_COLOUR_BLACK;
 
         // Set Screen Address
-        this->screen = textMode.screenAddr;
+        this->screen = shiro->textMode.screenAddr;
 
         // Define the initial terminal
-        this->screen = (uint16_t *)0xB8000;
         this->current_terminal = 1;
         this->screen_width = 80;
         this->screen_height = 25;
@@ -112,8 +133,8 @@ public:
         this->UpdateScreen();
 
         // Enabling Cursor
-        cursor.enable();
-        cursor.moveTo(7, (this->screen_height - 1));
+        shiro->cursor.enable();
+        shiro->cursor.moveTo(7, (this->screen_height - 1));
 
         // Write header
         this->WriteH("Welcome to Shiro - Operating System");
@@ -121,11 +142,46 @@ public:
         // Now that everything is set, let's enable the keyboard
         System::Drivers::Keyboard::Start();
 
-        shiro.NotImplemented();
+        // Routines that should run once the shell is loaded
+        this->Finish();
     }
 
     /**
-     * System::Shell.UpdateScreen()
+     * Applications::Shell.Finish()
+     *
+     * This is our pseudo destructor, a finishing point.
+     * Here we can implement our final routines for the Shell application.
+     * 
+     * @return void
+     */
+    void Finish()
+    {
+        // Log
+        log("> Finishing Shell\n");
+
+        // Get current terminal
+        uint16_t active_terminal = this->current_terminal;
+
+        // Write message to terminal 1 to 4
+        for (size_t terminal_id = 1; terminal_id <= 4; terminal_id++)
+        {
+            this->current_terminal = terminal_id;
+            this->echo("> SHIRO IS LOADED AND READY TO GO\n");
+        }
+
+        // Write message to terminal 5 (debug)
+        this->current_terminal = 5;
+        this->echo("> THE DEBUG TERMINAL IS LOADED AND READY TO GO\n");
+
+        // Set terminal back to the active one
+        this->current_terminal = active_terminal;
+
+        // Update Sccreen
+        this->UpdateScreen();
+    }
+
+    /**
+     * Applications::Shell.UpdateScreen()
      *
      * This method will fetch information from all screen buffers and rebuild the whole screen.
      * 
@@ -133,8 +189,14 @@ public:
      */
     void UpdateScreen()
     {
-        // Log
-        log("> Updating Screen");
+        // Get Shiro's Instance
+        System::Shiro *shiro = System::Shiro::GetInstance();
+
+        /** 
+         * We need to keep track of our current terminal
+         * That information will be displayed at the header
+         */
+        this->WriteToH(concat("| Terminal #", int2char(this->current_terminal)), (80 - 13), 0);
 
         // Push Header to Screen
         size_t pos = 0;
@@ -159,11 +221,13 @@ public:
 
         // Moving cursor
         size_t size = System::Drivers::Keyboard::GetBufferSize();
-        cursor.moveTo((size + 7), (this->screen_height - 1));
+
+        // Set cursor position
+        shiro->cursor.moveTo((size + 7), (this->screen_height - 1));
     }
 
     /**
-     * System::Shell.Update()
+     * Applications::Shell.Update()
      *
      * This method is called by the OS on its final loop.
      * If the keyboard buffer was updated, this method will handle it.
@@ -179,6 +243,24 @@ public:
         char *keyboardBuffer = System::Drivers::Keyboard::GetBuffer();
         size_t keyboardBufferSize = System::Drivers::Keyboard::GetBufferSize();
         bool was_updated = System::Drivers::Keyboard::WasUpdated();
+
+        /**
+         * Before checking the actual Keyboard Buffer, let's check function keys.
+         * In the context of this shell, the function key will be a terminal switcher.
+         * If a user selectes F1, it will display terminal 1.
+         * The same is true for all terminals up to F5.
+         */
+        uint16_t function_key = System::Drivers::Keyboard::GetFunctionKey();
+
+        // Now we handle the function key, if it is selected
+        if (function_key > 0)
+        {
+            // Change current terminal
+            this->current_terminal = function_key;
+
+            // Update Screen
+            this->UpdateScreen();
+        }
 
         // If no changes were made to the buffer, we don't need to do anything
         if (was_updated == false)
@@ -222,7 +304,7 @@ public:
     }
 
     /**
-     * System::Shell.StartTerminalHeader()
+     * Applications::Shell.StartTerminalHeader()
      *
      * This method will kick-start our terminal header.
      * 
@@ -244,7 +326,7 @@ public:
     }
 
     /**
-     * System::Shell.StartTerminalFooter()
+     * Applications::Shell.StartTerminalFooter()
      *
      * This method will kick-start our terminal footer.
      * 
@@ -252,9 +334,6 @@ public:
      */
     void StartTerminalFooter()
     {
-        // Log
-        log("> Initializing Terminal Footer (User Point)");
-
         // Define the size of the footer and where to start
         size_t size = this->footer_starting_point + (this->terminal_footer_height * this->terminal_footer_width);
 
@@ -272,7 +351,7 @@ public:
     }
 
     /**
-     * System::Shell.StartTerminal()
+     * Applications::Shell.StartTerminal()
      *
      * This method will kick-start all our terminals.
      * 
@@ -281,7 +360,7 @@ public:
     void StartTerminal(uint16_t terminal_id)
     {
         // Log
-        log("> Initializing Terminal $terminal_id");
+        log("> Initializing Terminal #", terminal_id);
 
         // Define the size of the content and where to start
         size_t size = this->content_starting_point + (this->terminal_content_height * this->terminal_content_width);
@@ -289,18 +368,18 @@ public:
         // Write content to content buffer
         for (size_t pos = this->content_starting_point; pos < size; pos++)
         {
-            this->terminal_screens[terminal_id][pos] = System::VGA::setColor(' ', this->terminal_color);
+            this->terminal_screens[terminal_id][pos] = System::VGA::setColorContent(' ', this->terminal_color);
         }
     }
 
     /**
-     * System::Shell.StartTerminalFooter()
+     * Applications::Shell.WriteC()
      *
      * This method will wrinte content to the currently active terminal.
      * 
      * @return void
      */
-    void WriteC(const char *data)
+    void WriteC(const char *data, bool update = true)
     {
         size_t gi = 0;
         size_t last_line_starting_point = this->terminal_content_width * this->terminal_content_height;
@@ -318,22 +397,50 @@ public:
                 this->content_current_x = 0;
             }
             gi = last_line_starting_point + this->content_current_x;
-            this->terminal_screens[this->current_terminal][gi] = System::VGA::setColor(data[i], this->terminal_color);
+            this->terminal_screens[this->current_terminal][gi] = System::VGA::setColorContent(data[i], this->terminal_color);
             this->content_current_x++;
         }
 
         this->Scroll();
+
+        if (update)
+        {
+            this->UpdateScreen();
+        }
+    }
+
+    /**
+     * Applications::Shell.WriteD()
+     *
+     * This method will wrinte content to the debug terminal.
+     * 
+     * @return void
+     */
+    void WriteD(const char *data)
+    {
+        // Get current terminal
+        uint16_t active_terminal = this->current_terminal;
+
+        // Change current_terminal to Debug Terminal (#5)
+        this->current_terminal = 5;
+
+        // Write the message
+        this->WriteC(data, false);
+
+        // Return to the current terminal
+        this->current_terminal = active_terminal;
+
         this->UpdateScreen();
     }
 
     /**
-     * System::Shell.WriteH()
+     * Applications::Shell.WriteH(const char *data, bool update = true)
      *
      * This method will write content to our header.
      * 
      * @return void
      */
-    void WriteH(const char *data)
+    void WriteH(const char *data, bool update = true)
     {
         size_t gi = 0;
         size_t limit = this->header_size - 1;
@@ -348,11 +455,15 @@ public:
             this->terminal_screen_header[gi] = System::VGA::setColor(data[i], this->header_color);
             this->header_current_x++;
         }
-        this->UpdateScreen();
+
+        if (update)
+        {
+            this->UpdateScreen();
+        }
     }
 
     /**
-     * System::Shell.WriteF()
+     * Applications::Shell.WriteF()
      *
      * This method will write content to our footer.
      * 
@@ -377,7 +488,7 @@ public:
     }
 
     /**
-     * System::Shell.WriteToH()
+     * Applications::Shell.WriteToH()
      *
      * This method will write content to our header on a specific coordinate.
      * 
@@ -391,14 +502,14 @@ public:
         this->header_current_x = x - 1;
         this->header_current_y = y;
 
-        this->WriteH(data);
+        this->WriteH(data, false);
 
         this->header_current_x = org_x;
         this->header_current_y = org_y;
     }
 
     /**
-     * System::Shell.Scroll()
+     * Applications::Shell.Scroll()
      *
      * This method will scroll the content on our currently active terminal.
      * 
@@ -419,14 +530,14 @@ public:
 
         for (i = ((this->screen_height - this->terminal_footer_height - 1) * 80); i < (80 * 24); i++)
         {
-            this->terminal_screens[this->current_terminal][i] = System::VGA::setColor(' ', this->terminal_color);
+            this->terminal_screens[this->current_terminal][i] = System::VGA::setColorContent(' ', this->terminal_color);
         }
 
         this->content_current_x = 0;
     }
 
     /**
-     * System::Shell.Prepare(const char* content)
+     * Applications::Shell.Prepare(const char* content)
      *
      * This method will prepare the content that will be outputted.
      * 
@@ -439,7 +550,7 @@ public:
     }
 
     /**
-     * System::Shell.Prepare(int content)
+     * Applications::Shell.Prepare(int content)
      *
      * This method will prepare the content that will be outputted.
      * 
@@ -452,7 +563,7 @@ public:
     }
 
     /**
-     * System::Shell.echo(Any content)
+     * Applications::Shell.echo(Any content)
      *
      * This method will write content to our currently active terminal.
      * 
@@ -466,7 +577,7 @@ public:
     }
 
     /**
-     * System::Shell.echo(Any content, Rest... rest)
+     * Applications::Shell.echo(Any content, Rest... rest)
      *
      * This method will write more than one content to our currently active terminal.
      * 
@@ -480,6 +591,9 @@ public:
         echo(content, rest...);
     }
 };
-} // namespace System
+} // namespace Applications
+
+// Let's mark our current instance as non-existing
+Applications::Shell *Applications::Shell::instance = 0;
 
 #endif

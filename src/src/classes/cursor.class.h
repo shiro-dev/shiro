@@ -1,8 +1,6 @@
 #ifndef CURSOR_CLASS_H
 #define CURSOR_CLASS_H
 
-#include "bios.class.h"
-
 /**
  * namespace System
  *

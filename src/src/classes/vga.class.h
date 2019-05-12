@@ -39,12 +39,15 @@ namespace System
             static uint16_t setColor(unsigned char content, uint8_t color){
                 return (uint16_t) content | (uint16_t) color << 8;
             };
+
+            static uint16_t* setColorContent(unsigned char content, uint8_t color){
+                return (uint16_t*) ((uint16_t) content | (uint16_t) color << 8);
+            };
             
-            void Start(auto& shiro)
+            void Start()
             {
                 // Log
                 log("> Starting VGA");
-                shiro.NotImplemented();
             }
 
             

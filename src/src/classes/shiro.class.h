@@ -12,7 +12,6 @@
 #include "text.mode.class.h"
 #include "video.mode.class.h"
 #include "cursor.class.h"
-#include "shell.class.h"
 
 /**
  * namespace System
@@ -30,6 +29,17 @@ namespace System
  */
 class Shiro
 {
+private:
+    /**
+     * This parameter will hold our instance.
+     */
+    static System::Shiro *instance;
+
+    /**
+     * Adding a private contructor.
+     */
+    Shiro(){};
+
 public:
     /**
      * This parameter is responsible for all vga related items (colors, mostly).
@@ -52,11 +62,6 @@ public:
     System::Bios bios;
 
     /**
-     * This parameter is responsible for all shell interactions.
-     */
-    System::Shell shell;
-
-    /**
      * This parameter is responsible for all interactions with the keyboard.
      */
     System::Drivers::Keyboard keyboard;
@@ -72,74 +77,69 @@ public:
     System::IDT idt;
 
     /**
-     * System::Shiro.NotImplemented()
-     * 
-     * This method was created to avoid the "unused parameter" warning when compiling the code.
+     * This parameter is responsible for all interactions with the text cursor.
      */
-    void NotImplemented()
+    System::Cursor cursor;
+
+    /**
+     * This parameter will set/return our current instance
+     */
+    static System::Shiro *GetInstance()
     {
-        // ...
+        if (instance == 0)
+        {
+            instance = new System::Shiro();
+        }
+
+        return instance;
     }
 
     /**
-     * System::Shiro.Start(auto &shiro)
+     * System::Shiro.Start()
      *
      * This is our pseudo constructor, a starting point.
      * Here we can implement the actual OS code.
      * 
      * @return void
      */
-    void Start(auto &shiro)
+    void Start()
     {
         // Intro message
         log("> Welcome to Shiro - Operating System");
 
         // Load our Global Descriptor Table
-        this->gdt.Start(shiro);
+        this->gdt.Start();
 
         // Load our Interrupt Descriptor Table
-        this->idt.Start(shiro);
+        this->idt.Start();
 
         // Start Text Mode
-        this->textMode.Start(shiro);
+        this->textMode.Start();
+
+        // Initializing VGA
+        this->vga.Start();
     }
 
     /**
-     * System::Shiro.Finish(auto &shiro)
+     * System::Shiro.Finish()
      *
      * This is our pseudo destructor, a finishing point.
      * Here we can implement our final routines before ending our OS execution.
      * 
      * @return void
      */
-    void Finish(auto &shiro)
+    void Finish()
     {
         // Finish Text Mode
-        this->textMode.Finish(shiro);
-
-        // Start Shell
-        this->shell.Start(shiro);
+        this->textMode.Finish();
 
         // We are good to go
         log("> SHIRO IS LOADED AND READY TO GO");
-        shiro.shell.echo("> SHIRO IS LOADED AND READY TO GO\n");
-
-        // Start our loop sequence
-        this->Loop(shiro);
-    }
-
-    /**
-     * System::Shiro.Loop(auto &shiro)
-     *
-     * Here we can place routines that are going to run on loop once the whole OS is loaded.
-     * 
-     * @return void
-     */
-    void Loop(auto &shiro)
-    {
-        
     }
 };
 } // namespace System
+
+// Let's mark our current instance as non-existing
+System::Shiro *System::Shiro::instance = 0;
 
 #endif

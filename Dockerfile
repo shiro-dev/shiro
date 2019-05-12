@@ -21,8 +21,8 @@ COPY ./install /docker-install
 RUN echo "INSTALL i686 ELF CROSS-COMPILER"
 RUN bash /docker-install/install.sh
 
+#RUN echo "COMPILING i686 ELF CROSS-COMPILER (this should take around 2 hours)"
 #RUN bash /docker-install/i686-elf-tools.sh
-#CMD cp /docker-install/i686-elf-tools-linux.zip /install/i686-elf-tools-linux.zip
 
 RUN echo "INSTALL COMPOSER"
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -64,6 +64,12 @@ RUN apt-get install -y libc++-7-dev libc++abi-7-dev
 
 # OpenMP
 RUN apt-get install -y libomp-7-dev
+
+RUN echo "INSTALL BISON"
+RUN apt-get install -y libc++-helpers bison
+
+RUN echo "INSTALL FLEX"
+RUN apt-get install -y flex
 
 RUN echo "DONE"
 WORKDIR /home/shiro

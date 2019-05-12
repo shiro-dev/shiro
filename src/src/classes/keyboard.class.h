@@ -27,6 +27,7 @@ class Keyboard
 public:
     static char buffer[50];
     static bool was_updated;
+    static uint16_t function_key;
 
     /**
      * System::Drivers::Keyboard::Start()
@@ -110,9 +111,23 @@ public:
             return 'm';
         if (key == 0x29)
             return '0';
-        if (key == 0x2)
+        if (key == 0x02)
             return '1';
-        if (key == 0xA)
+        if (key == 0x03)
+            return '2';
+        if (key == 0x04)
+            return '3';
+        if (key == 0x05)
+            return '4';
+        if (key == 0x06)
+            return '5';
+        if (key == 0x07)
+            return '6';
+        if (key == 0x08)
+            return '7';
+        if (key == 0x09)
+            return '8';
+        if (key == 0x0A)
             return '9';
         if (key == 0x34)
             return '.';
@@ -122,6 +137,17 @@ public:
             return '\n';
         if (key == 0xE && GetBufferSize() > 0)
             BufferRemoveOne();
+        if (key == 0x3B)
+            SetFunctionKey(1);
+        if (key == 0x3C)
+            SetFunctionKey(2);
+        if (key == 0x3D)
+            SetFunctionKey(3);
+        if (key == 0x3E)
+            SetFunctionKey(4);
+        if (key == 0x3F)
+            SetFunctionKey(5);
+
         return false;
     }
 
@@ -201,6 +227,37 @@ public:
 
         // Mark as updated
         System::Drivers::Keyboard::UpdateNotification(true);
+    }
+
+    /**
+     * System::Drivers::Keyboard::SetFunctionKey(uint16_t key)
+     * 
+     * This method will set a function key
+     * 
+     * @return void 
+     */
+    static void SetFunctionKey(uint16_t key)
+    {
+        function_key = key;
+    }
+
+    /**
+     * System::Drivers::Keyboard::GetFunctionKey()
+     * 
+     * This method will get which function key was pressed
+     * 
+     * @return uint16_t 
+     */
+    static uint16_t GetFunctionKey()
+    {
+        // Store the selected function key to a temporary variable
+        uint16_t return_function_key = function_key;
+
+        // Reset the functino key to zero
+        function_key = 0;
+
+        // Return selected function key
+        return return_function_key;
     }
 
     /**
@@ -292,5 +349,6 @@ public:
  */
 char System::Drivers::Keyboard::buffer[50];
 bool System::Drivers::Keyboard::was_updated = false;
+uint16_t System::Drivers::Keyboard::function_key = 0;
 
 #endif

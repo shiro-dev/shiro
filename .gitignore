@@ -3,6 +3,7 @@ hyperv/
 phpelf/
 install/binutils-2.31.1/
 install/cross-compiler-libsupcxx/
+install/i686-elf-tools-linux/
 src/src/samples/
 src/grub/boot/grub/*.cfg
 *.code-workspace
