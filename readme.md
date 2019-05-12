@@ -6,9 +6,9 @@
 
 <br/>
 
-<img src="https://img.shields.io/badge/Version-v0.3-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Version-v0.4-green.svg" alt="Version">
 &nbsp;
-<img src="https://img.shields.io/badge/Date-2019/05/11-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Date-2019/05/12-green.svg" alt="Version">
 
 </p>
 

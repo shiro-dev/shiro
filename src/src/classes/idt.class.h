@@ -46,7 +46,7 @@ public:
     * 
     * @return void
     */
-   void Start(auto &shiro)
+   void Start()
    {
       ptr.limit = sizeof(idt_entry_t) * 256 - 1;
       ptr.base = (uint32_t)&entries;
@@ -87,8 +87,6 @@ public:
       SetGate(31, (uint32_t)isr31, 0x08, 0x8E);
 
       IDTFlush((uint32_t)&ptr);
-
-      shiro.NotImplemented();
    }
 
    /**

@@ -1,8 +1,7 @@
 #include <helper/debug.h>
+#include <new.h>
 #include "shiro.class.h"
-
-// Instantiate the System::Shiro class
-System::Shiro shiro;
+#include "shell.class.h"
 
 /**
  * loop()
@@ -13,9 +12,16 @@ System::Shiro shiro;
  */
 void loop()
 {
+    // Get Shell's Instance
+    Applications::Shell *shell = Applications::Shell::GetInstance();
+
+    // Loop
     while (true)
     {
-        shiro.shell.Update();
+        // Update Shell
+        shell->Update();
+
+        // Rinse and repeat
         delay(10);
     }
 }
@@ -30,11 +36,20 @@ void loop()
  */
 extern "C" void shiro_main()
 {
+    // Get Shiro's Instance
+    System::Shiro *shiro = System::Shiro::GetInstance();
+
     // Load Shiro starting method (construtor)
-    shiro.Start(shiro);
+    shiro->Start();
 
     // Load Shiro finishing method (destructor)
-    shiro.Finish(shiro);
+    shiro->Finish();
+
+    // Get Shell's Instance
+    Applications::Shell *shell = Applications::Shell::GetInstance();
+
+    // Now that Shiro is loaded, let's start our Shell Application
+    shell->Start();
 
     // Call final loop
     loop();
