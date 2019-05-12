@@ -1,3 +1,6 @@
+#ifndef NEW_H
+#define NEW_H
+
 #include <stddef.h>
 
 /**
@@ -22,3 +25,5 @@ void *operator new(size_t size)
     // Return
     return memory;
 }
+
+#endif
