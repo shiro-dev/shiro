@@ -47,7 +47,7 @@ public:
      * 
      * @return void
      */
-    void Start(auto &shiro)
+    void Start()
     {
         // Set Limit and Base
         this->ptr.limit = (sizeof(gdt_entry_t) * 5) - 1;
@@ -62,8 +62,6 @@ public:
 
         // Flush
         GDTFlush((uint32_t) & this->ptr);
-
-        shiro.NotImplemented();
     }
 
     /**
