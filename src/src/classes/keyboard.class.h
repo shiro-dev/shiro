@@ -19,8 +19,14 @@ namespace Drivers
 /**
  * System::Drivers::Keyboard()
  *
- * This class is responsible for controlling the Keyboard.
- * The "keys" are going to be received by the ISR handler and sent here.
+ * Full PS/2 scancode set 1 driver for a US QWERTY layout.
+ *
+ *  - Tracks key release (high bit of scancode) so modifiers can be released.
+ *  - Tracks Shift / Ctrl / Alt / Caps Lock state.
+ *  - Handles the 0xE0 "extended" prefix (arrows, etc) — currently swallowed
+ *    rather than mapped, but the prefix logic is in place so a future patch
+ *    only has to fill the extended-key table.
+ *  - F1–F5 still drive the terminal switcher.
  */
 class Keyboard
 {
@@ -29,257 +35,292 @@ public:
     static bool was_updated;
     static uint16_t function_key;
 
+    // Modifier / state flags. Public so anyone can poll if needed.
+    static bool shift_pressed;
+    static bool ctrl_pressed;
+    static bool alt_pressed;
+    static bool caps_lock;
+    static bool extended_prefix;
+
     /**
      * System::Drivers::Keyboard::Start()
      *
-     * This method will activate the keyboard.
+     * Unmasks IRQ1 on the (already-remapped) master PIC. After PIC::Start
+     * the master is at vector base 0x20, so the keyboard arrives as INT 0x21.
+     * IF is enabled at the very end of Shiro::Start.
      */
     static void Start()
     {
-        // Log
-        log("> Enabling Keyboard Interrupt");
-
-        // Enable Keyboard
-        asm("cli");
-        outb(0x21, 0xFD);
-        outb(0xA1, 0xFF);
-        asm("sti");
+        log("> Enabling Keyboard (IRQ1 -> INT 0x21)");
+        System::PIC::Unmask(1);
     }
 
     /**
-     * System::Drivers::Keyboard::Key2ASCII(uint8_t key)
-     * 
-     * This method is responsible for converting a scancode into a character or action
-     * 
-     * @return uint8_t
-     */
-    static uint8_t Key2ASCII(uint8_t key)
-    {
-        if (key == 0x1E)
-            return 'a';
-        if (key == 0x10)
-            return 'q';
-        if (key == 0x11)
-            return 'w';
-        if (key == 0x12)
-            return 'e';
-        if (key == 0x13)
-            return 'r';
-        if (key == 0x14)
-            return 't';
-        if (key == 0x15)
-            return 'y';
-        if (key == 0x16)
-            return 'u';
-        if (key == 0x17)
-            return 'i';
-        if (key == 0x18)
-            return 'o';
-        if (key == 0x19)
-            return 'p';
-        if (key == 0x1E)
-            return 'a';
-        if (key == 0x1F)
-            return 's';
-        if (key == 0x20)
-            return 'd';
-        if (key == 0x21)
-            return 'f';
-        if (key == 0x22)
-            return 'g';
-        if (key == 0x23)
-            return 'h';
-        if (key == 0x24)
-            return 'j';
-        if (key == 0x25)
-            return 'k';
-        if (key == 0x26)
-            return 'l';
-        if (key == 0x2C)
-            return 'z';
-        if (key == 0x2D)
-            return 'x';
-        if (key == 0x2E)
-            return 'c';
-        if (key == 0x2F)
-            return 'v';
-        if (key == 0x30)
-            return 'b';
-        if (key == 0x31)
-            return 'n';
-        if (key == 0x32)
-            return 'm';
-        if (key == 0x29)
-            return '0';
-        if (key == 0x02)
-            return '1';
-        if (key == 0x03)
-            return '2';
-        if (key == 0x04)
-            return '3';
-        if (key == 0x05)
-            return '4';
-        if (key == 0x06)
-            return '5';
-        if (key == 0x07)
-            return '6';
-        if (key == 0x08)
-            return '7';
-        if (key == 0x09)
-            return '8';
-        if (key == 0x0A)
-            return '9';
-        if (key == 0x34)
-            return '.';
-        if (key == 0x39)
-            return ' ';
-        if (key == 0x1C && GetBufferSize() > 0)
-            return '\n';
-        if (key == 0xE && GetBufferSize() > 0)
-            BufferRemoveOne();
-        if (key == 0x3B)
-            SetFunctionKey(1);
-        if (key == 0x3C)
-            SetFunctionKey(2);
-        if (key == 0x3D)
-            SetFunctionKey(3);
-        if (key == 0x3E)
-            SetFunctionKey(4);
-        if (key == 0x3F)
-            SetFunctionKey(5);
-
-        return false;
-    }
-
-    /**
-     * System::Drivers::Keyboard::Handler();
-     * 
-     * This method will handle interactions with the keyboard
-     * 
-     * @return void 
+     * System::Drivers::Keyboard::Handler()
+     *
+     * Called from the IRQ1 ISR. Reads one byte from the PS/2 data port,
+     * interprets it as a scancode, and either updates internal state or
+     * appends the resulting ASCII character to the keyboard buffer.
      */
     static void Handler()
     {
-        if (inb(0x64) & 1)
+        // Only act if the controller actually has data ready.
+        if (!(inb(0x64) & 1))
+            return;
+
+        uint8_t sc = inb(0x60);
+
+        // 0xE0 introduces an extended scancode (arrow keys, right-modifiers,
+        // numpad / etc). Eat the prefix and remember it for the next byte.
+        if (sc == 0xE0)
         {
-            // Get scancode
-            uint8_t scancode = inb(0x60);
-
-            // Handle scancode
-            const char key = Key2ASCII(scancode);
-
-            // If we were able to convert scancode into character, add to buffer
-            if (key)
-            {
-                BufferAdd(&key);
-            }
+            extended_prefix = true;
+            return;
         }
+
+        bool released = (sc & 0x80) != 0;
+        uint8_t code = sc & 0x7F;
+
+        if (extended_prefix)
+        {
+            extended_prefix = false;
+            // (Future: arrows, Right Ctrl/Alt, Home/End, Insert/Delete, etc.)
+            return;
+        }
+
+        // ---- Modifier keys (set/clear state, no buffer write) ----
+        switch (code)
+        {
+        case 0x2A: // Left Shift
+        case 0x36: // Right Shift
+            shift_pressed = !released;
+            return;
+        case 0x1D: // Left Ctrl
+            ctrl_pressed = !released;
+            return;
+        case 0x38: // Left Alt
+            alt_pressed = !released;
+            return;
+        case 0x3A: // Caps Lock — toggle on press only
+            if (!released)
+                caps_lock = !caps_lock;
+            return;
+        }
+
+        // From here on we only care about presses.
+        if (released)
+            return;
+
+        // ---- Function keys (F1–F5 = terminal switcher) ----
+        if (code >= 0x3B && code <= 0x3F)
+        {
+            SetFunctionKey((uint16_t)(code - 0x3A));
+            return;
+        }
+
+        // ---- Look up the printable character ----
+        char c = shift_pressed ? Shifted(code) : Unshifted(code);
+        if (c == 0)
+            return;
+
+        // Caps Lock affects letters only, and only inverts shift's effect.
+        if (caps_lock && c >= 'a' && c <= 'z')
+            c = (char)(c - 32);
+        else if (caps_lock && c >= 'A' && c <= 'Z')
+            c = (char)(c + 32);
+
+        // ---- Special handling: Backspace, Enter ----
+        if (c == '\b')
+        {
+            if (GetBufferSize() > 0)
+                BufferRemoveOne();
+            return;
+        }
+        if (c == '\n')
+        {
+            // Mirror the original behaviour: an Enter on an empty buffer is
+            // a no-op (keeps the prompt clean).
+            if (GetBufferSize() == 0)
+                return;
+            const char nl[2] = { '\n', '\0' };
+            BufferAdd(nl);
+            return;
+        }
+
+        // ---- Regular printable: append as a 1-char null-terminated string. ----
+        const char str[2] = { c, '\0' };
+        BufferAdd(str);
     }
 
     /**
-     * System::Drivers::Keyboard::GetBuffer()
-     * 
-     * This method will return the current keyboard buffer
-     * 
-     * @return char 
+     * Scancode-set-1 → ASCII (no modifier).
+     * Returns 0 for keys that don't produce a printable character on their own.
      */
-    static char *GetBuffer()
+    static char Unshifted(uint8_t code)
     {
-        return buffer;
+        switch (code)
+        {
+        case 0x01: return 27;    // Esc
+        case 0x02: return '1';
+        case 0x03: return '2';
+        case 0x04: return '3';
+        case 0x05: return '4';
+        case 0x06: return '5';
+        case 0x07: return '6';
+        case 0x08: return '7';
+        case 0x09: return '8';
+        case 0x0A: return '9';
+        case 0x0B: return '0';
+        case 0x0C: return '-';
+        case 0x0D: return '=';
+        case 0x0E: return '\b';  // Backspace
+        case 0x0F: return '\t';  // Tab
+        case 0x10: return 'q';
+        case 0x11: return 'w';
+        case 0x12: return 'e';
+        case 0x13: return 'r';
+        case 0x14: return 't';
+        case 0x15: return 'y';
+        case 0x16: return 'u';
+        case 0x17: return 'i';
+        case 0x18: return 'o';
+        case 0x19: return 'p';
+        case 0x1A: return '[';
+        case 0x1B: return ']';
+        case 0x1C: return '\n';  // Enter
+        case 0x1E: return 'a';
+        case 0x1F: return 's';
+        case 0x20: return 'd';
+        case 0x21: return 'f';
+        case 0x22: return 'g';
+        case 0x23: return 'h';
+        case 0x24: return 'j';
+        case 0x25: return 'k';
+        case 0x26: return 'l';
+        case 0x27: return ';';
+        case 0x28: return '\'';
+        case 0x29: return '`';
+        case 0x2B: return '\\';
+        case 0x2C: return 'z';
+        case 0x2D: return 'x';
+        case 0x2E: return 'c';
+        case 0x2F: return 'v';
+        case 0x30: return 'b';
+        case 0x31: return 'n';
+        case 0x32: return 'm';
+        case 0x33: return ',';
+        case 0x34: return '.';
+        case 0x35: return '/';
+        case 0x37: return '*';   // keypad-*
+        case 0x39: return ' ';
+        }
+        return 0;
     }
 
     /**
-     * System::Drivers::Keyboard::GetBufferSize()
-     * 
-     * This method will return the size of the current keyboard buffer
-     * 
-     * @return size_t 
+     * Scancode-set-1 → ASCII when Shift is held.
      */
-    static size_t GetBufferSize()
+    static char Shifted(uint8_t code)
     {
-        return strlen(buffer);
+        switch (code)
+        {
+        case 0x01: return 27;
+        case 0x02: return '!';
+        case 0x03: return '@';
+        case 0x04: return '#';
+        case 0x05: return '$';
+        case 0x06: return '%';
+        case 0x07: return '^';
+        case 0x08: return '&';
+        case 0x09: return '*';
+        case 0x0A: return '(';
+        case 0x0B: return ')';
+        case 0x0C: return '_';
+        case 0x0D: return '+';
+        case 0x0E: return '\b';
+        case 0x0F: return '\t';
+        case 0x10: return 'Q';
+        case 0x11: return 'W';
+        case 0x12: return 'E';
+        case 0x13: return 'R';
+        case 0x14: return 'T';
+        case 0x15: return 'Y';
+        case 0x16: return 'U';
+        case 0x17: return 'I';
+        case 0x18: return 'O';
+        case 0x19: return 'P';
+        case 0x1A: return '{';
+        case 0x1B: return '}';
+        case 0x1C: return '\n';
+        case 0x1E: return 'A';
+        case 0x1F: return 'S';
+        case 0x20: return 'D';
+        case 0x21: return 'F';
+        case 0x22: return 'G';
+        case 0x23: return 'H';
+        case 0x24: return 'J';
+        case 0x25: return 'K';
+        case 0x26: return 'L';
+        case 0x27: return ':';
+        case 0x28: return '"';
+        case 0x29: return '~';
+        case 0x2B: return '|';
+        case 0x2C: return 'Z';
+        case 0x2D: return 'X';
+        case 0x2E: return 'C';
+        case 0x2F: return 'V';
+        case 0x30: return 'B';
+        case 0x31: return 'N';
+        case 0x32: return 'M';
+        case 0x33: return '<';
+        case 0x34: return '>';
+        case 0x35: return '?';
+        case 0x37: return '*';
+        case 0x39: return ' ';
+        }
+        return 0;
     }
 
     /**
-     * System::Drivers::Keyboard::BufferRemoveOne()
-     * 
-     * This method will remove the last character of the keyboard buffer
-     * 
-     * @return void 
+     * Legacy API kept for source compatibility — returns the unshifted char.
      */
+    static uint8_t Key2ASCII(uint8_t key)
+    {
+        return (uint8_t)Unshifted(key);
+    }
+
+    static char *GetBuffer() { return buffer; }
+    static size_t GetBufferSize() { return strlen(buffer); }
+
     static void BufferRemoveOne()
     {
-        // Get current buffer size
         size_t size = GetBufferSize();
-
-        // Remove last character from command buffer
         if (size > 0)
         {
-            if (size == 1)
-            {
-                buffer[0] = '\0';
-            }
-            else
-            {
-                buffer[size - 1] = '\0';
-            }
+            buffer[size - 1] = '\0';
         }
-
-        // Mark as updated
-        System::Drivers::Keyboard::UpdateNotification(true);
+        UpdateNotification(true);
     }
 
-    /**
-     * System::Drivers::Keyboard::SetFunctionKey(uint16_t key)
-     * 
-     * This method will set a function key
-     * 
-     * @return void 
-     */
-    static void SetFunctionKey(uint16_t key)
-    {
-        function_key = key;
-    }
+    static void SetFunctionKey(uint16_t key) { function_key = key; }
 
-    /**
-     * System::Drivers::Keyboard::GetFunctionKey()
-     * 
-     * This method will get which function key was pressed
-     * 
-     * @return uint16_t 
-     */
     static uint16_t GetFunctionKey()
     {
-        // Store the selected function key to a temporary variable
-        uint16_t return_function_key = function_key;
-
-        // Reset the functino key to zero
+        uint16_t k = function_key;
         function_key = 0;
-
-        // Return selected function key
-        return return_function_key;
+        return k;
     }
 
-    /**
-     * System::Drivers::Keyboard::BufferAdd(const char *command)
-     * 
-     * This method will add a character to the current keyboard buffer
-     * 
-     * @return void 
-     */
     static void BufferAdd(const char *command)
     {
-        // Get Buffer Size
         size_t size = GetBufferSize();
-
-        // Set linebreak
         const char *linebreak = "\n";
 
-        // Don't let the user type more than 50 characters, except for \n
+        // Cap at 50, except for Enter which we always allow through so the
+        // shell can detect end-of-line.
         if (size >= 50 && command != linebreak)
             return;
 
-        // Let's copy the new command to the buffer
         if (size > 0)
         {
             const char *string = concat(buffer, command);
@@ -290,65 +331,36 @@ public:
             strcpy(buffer, command);
         }
 
-        // Mark as updated
-        System::Drivers::Keyboard::UpdateNotification(true);
+        UpdateNotification(true);
     }
 
-    /**
-     * System::Drivers::Keyboard::BufferReset()
-     * 
-     * This method will clean the current keyboard buffer
-     * 
-     * @return void 
-     */
     static void BufferReset()
     {
-        // Clean command buffer
         buffer[0] = '\0';
-
-        // Mark as updated
-        System::Drivers::Keyboard::UpdateNotification(true);
+        UpdateNotification(true);
     }
 
-    /**
-     * System::Drivers::Keyboard::UpdateNotification()
-     * 
-     * This method will mark the buffer as updated so it can be user by other softwares
-     * 
-     * @return char 
-     */
-    static void UpdateNotification(bool flag)
-    {
-        System::Drivers::Keyboard::was_updated = flag;
-    }
+    static void UpdateNotification(bool flag) { was_updated = flag; }
 
-    /**
-     * System::Drivers::Keyboard::WasUpdated()
-     * 
-     * This method can be used to see if the keyboard buffer was updated.
-     * Once checked, the was_updated flag will be set to false.
-     * 
-     * @return char 
-     */
     static bool WasUpdated()
     {
-        bool wupd = System::Drivers::Keyboard::was_updated;
-        if (wupd == true)
-        {
-            System::Drivers::Keyboard::UpdateNotification(false);
-        }
+        bool wupd = was_updated;
+        if (wupd)
+            UpdateNotification(false);
         return wupd;
     }
 };
 } // namespace Drivers
 } // namespace System
 
-/**
- * @todo Move this somewhere else
- * This is not the best place for this, but it was the only way to make it work.
- */
+// Static member definitions
 char System::Drivers::Keyboard::buffer[50];
 bool System::Drivers::Keyboard::was_updated = false;
 uint16_t System::Drivers::Keyboard::function_key = 0;
+bool System::Drivers::Keyboard::shift_pressed = false;
+bool System::Drivers::Keyboard::ctrl_pressed = false;
+bool System::Drivers::Keyboard::alt_pressed = false;
+bool System::Drivers::Keyboard::caps_lock = false;
+bool System::Drivers::Keyboard::extended_prefix = false;
 
 #endif

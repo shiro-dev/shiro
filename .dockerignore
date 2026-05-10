@@ -1,0 +1,14 @@
+.git
+.gitattributes
+.gitignore
+.github
+readme.md
+changelog.md
+
+# Build artifacts — should never go into the build context.
+src/bin/*.iso
+src/bin/*.bin
+src/lib/*.o
+src/log/*.log
+src/grub/boot/kernel.bin
+src/grub/boot/grub/grub.cfg

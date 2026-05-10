@@ -1,14 +1,9 @@
 #ifndef ISR_CLASS_H
 #define ISR_CLASS_H
 
-typedef struct registers
-{
-   uint32_t ds;                                     // Data segment selector
-   uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; // Pushed by pusha.
-   uint32_t int_no, err_code;                       // Interrupt number and error code (if applicable)
-   uint32_t eip, cs, eflags, useresp, ss;           // Pushed by the processor automatically.
-} registers_t;
+#include <registers.h>
 
+// CPU exceptions / reserved (vectors 0..31)
 extern "C" void isr0();
 extern "C" void isr1();
 extern "C" void isr2();
@@ -42,50 +37,83 @@ extern "C" void isr29();
 extern "C" void isr30();
 extern "C" void isr31();
 
-/**
- * namespace System
- *
- * This is our core namespace.
- * All system-related classes can be found on this namespace.
- */
+// Hardware IRQs after PIC remap to 0x20 (master) / 0x28 (slave).
+extern "C" void isr32();
+extern "C" void isr33();
+extern "C" void isr34();
+extern "C" void isr35();
+extern "C" void isr36();
+extern "C" void isr37();
+extern "C" void isr38();
+extern "C" void isr39();
+extern "C" void isr40();
+extern "C" void isr41();
+extern "C" void isr42();
+extern "C" void isr43();
+extern "C" void isr44();
+extern "C" void isr45();
+extern "C" void isr46();
+extern "C" void isr47();
+
 namespace System
 {
 /**
  * System::ISR()
  *
- * This class is responsible for controlling our Interrupt Service Routines.
+ * Routes every interrupt and exception that the CPU dispatches through
+ * the IDT.
+ *
+ *   vec 0..31  : CPU exceptions  -> System::Panic::Trigger (never returns)
+ *   vec 32     : IRQ0 timer      -> Drivers::Timer::Handler
+ *   vec 33     : IRQ1 keyboard   -> Drivers::Keyboard::Handler
+ *   vec 34..47 : other IRQs      -> ack PIC and ignore (for now)
  */
 class ISR
 {
 public:
-   /**
-    * Handler(registers_t regs)
-    * 
-    * This method will handle our IRQ calls. 
-    * 
-    * @return void
-    */
-   static void Handler(registers_t regs)
-   {
-      // In case of INT #9, call the Keyboard Handler
-      if (regs.int_no == 9)
-      {
-         System::Drivers::Keyboard::Handler();
-      }
+    static void Handler(registers_t regs)
+    {
+        // CPU exceptions: never return — Panic halts the kernel.
+        if (regs.int_no < 32)
+        {
+            System::Panic::Trigger(regs);
+            return;
+        }
 
-      // Let the CPU know that the interrupt was handled
-      outb(0x20, 0x20);
-   }
+        // Hardware IRQs (PIC) after remap.
+        if (regs.int_no <= 47)
+        {
+            uint8_t irq = (uint8_t)(regs.int_no - 32);
+
+            if (irq == 0)
+            {
+                System::Drivers::Timer::Handler();
+            }
+            else if (irq == 1)
+            {
+                System::Drivers::Keyboard::Handler();
+            }
+            // Any other IRQ is currently unhandled but still gets EOI'd
+            // below so the PIC keeps delivering interrupts.
+
+            System::PIC::EndOfInterrupt(irq);
+            return;
+        }
+
+        // Anything outside [0, 47] is something we never registered.
+        // Best-effort ack and continue.
+        outb(0x20, 0x20);
+    }
 };
 } // namespace System
 
 /**
- * This function allows our IRS Handler to be accessed by Assembly.
- * It is outside of the namespace/class so it can be seen by our boot.asm file.
+ * extern "C" so that isr_common_stub in boot/asm/isr.asm can `call` it.
+ * Lives outside the namespace so the linker resolves the symbol verbatim.
  */
 extern "C" void isr_handler(registers_t regs)
 {
-   System::ISR::Handler(regs);
+    System::ISR::Handler(regs);
 }
 
 #endif

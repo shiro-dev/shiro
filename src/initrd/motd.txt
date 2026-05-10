@@ -1,0 +1,5 @@
+                                     -=*<>*=-
+                  Shiro v0.5 - kernel built from scratch
+                                     -=*<>*=-
+
+Type 'help' to see what I can do. Type 'cat readme.txt' for an intro.

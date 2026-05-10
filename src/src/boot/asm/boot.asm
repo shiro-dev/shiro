@@ -78,3 +78,6 @@ shiro:
 
 ; Include IO functions
 %include "io.asm"
+
+; Include cooperative context-switch helper
+%include "switch.asm"

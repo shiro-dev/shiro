@@ -2,28 +2,49 @@
 #define NEW_H
 
 #include <stddef.h>
+#include "heap.class.h"
 
 /**
- * The bottom of our stack is set to 16384 (boot.asm)
- * Based on that, I'm pointing our current memory to bottom+1024.
- * This is not even close to being a memory manager, but it allows us to use the "new" operator.
- * Every time the operator is called, the memory base increases.
- * This is a very (very, very, ..., very) basic version of a WatterMark Allocator.
+ * Real `operator new` / `operator delete` backed by System::Heap.
+ *
+ * The previous implementation was a one-line bump that handed out the
+ * post-increment address (so every `new T()` lived in unowned memory) and
+ * did pointer arithmetic on a uint16_t* (advancing 2*size bytes per call).
+ * It "worked" only because the kernel's allocations were few and small.
+ *
+ * Now `new` is a thin wrapper around Heap::Alloc, and `delete` actually
+ * returns memory to the free list.
  */
-uint16_t *memory = (uint16_t *)(16384 + 1024);
 
-/**
- * This is a very basic implementation of the "new" operator.
- * Usage (example):
- *  char* c = new char(10);
- */
-void *operator new(size_t size)
+inline void *operator new(size_t size)
 {
-    // Set new memory base
-    memory += size;
+    return System::Heap::Alloc((uint32_t)size);
+}
 
-    // Return
-    return memory;
+inline void *operator new[](size_t size)
+{
+    return System::Heap::Alloc((uint32_t)size);
+}
+
+inline void operator delete(void *p) noexcept
+{
+    System::Heap::Free(p);
+}
+
+inline void operator delete[](void *p) noexcept
+{
+    System::Heap::Free(p);
+}
+
+// Sized-deallocation forms required by C++14+ even if we ignore the size.
+inline void operator delete(void *p, size_t) noexcept
+{
+    System::Heap::Free(p);
+}
+
+inline void operator delete[](void *p, size_t) noexcept
+{
+    System::Heap::Free(p);
 }
 
 #endif

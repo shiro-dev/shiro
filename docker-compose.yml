@@ -1,6 +1,3 @@
-version: '3.4'
-
-### Services
 services:
   shiro:
     container_name: shiro
@@ -8,11 +5,12 @@ services:
       context: ./
     volumes:
       - ./src/:/home/shiro
-      - ./install/:/install
-      - ./:/everything
-
-### Networks
-networks:
-  default:
-    external:
-      name: shiro-network
+    ports:
+      # noVNC web client → http://localhost:6080/vnc.html
+      - "6080:6080"
+      # Raw VNC (optional — connect with any VNC client to localhost:5900)
+      - "5900:5900"
+      # gdb remote target inside the container (for `make gdb`)
+      - "1234:1234"
+    # Keep the container alive so `docker exec` works for builds.
+    command: ["sleep", "infinity"]

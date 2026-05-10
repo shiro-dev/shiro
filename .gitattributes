@@ -1,0 +1,19 @@
+# Force LF on all text files so Windows checkouts don't break the build.
+* text=auto eol=lf
+
+# Explicit overrides for the kinds of files that matter.
+*.sh   text eol=lf
+*.cpp  text eol=lf
+*.h    text eol=lf
+*.asm  text eol=lf
+*.ld   text eol=lf
+*.cfg  text eol=lf
+makefile text eol=lf
+Dockerfile text eol=lf
+
+# Binary assets — never normalize.
+*.bmp binary
+*.png binary
+*.iso binary
+*.bin binary
+*.o   binary

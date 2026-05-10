@@ -3,9 +3,23 @@
 
 #include <string.h>
 #include <common.h>
+
+// New subsystems first — order matters because isr.class.h calls into
+// Panic, Timer, Keyboard, and PIC, so they all have to be visible before
+// the ISR dispatcher is defined.
+#include "multiboot.class.h"
+#include "panic.class.h"
+#include "pic.class.h"
 #include "keyboard.class.h"
-#include "gdt.class.h"
+#include "timer.class.h"
 #include "isr.class.h"
+#include "heap.class.h"
+#include "pmm.class.h"
+#include "paging.class.h"
+#include "scheduler.class.h"
+#include "initrd.class.h"
+
+#include "gdt.class.h"
 #include "idt.class.h"
 #include "bios.class.h"
 #include "vga.class.h"
@@ -42,42 +56,47 @@ private:
 
 public:
     /**
-     * This parameter is responsible for all vga related items (colors, mostly).
+     * Multiboot info parser. Populated by shiro_main before Start() runs.
+     */
+    System::Multiboot multiboot;
+
+    /**
+     * VGA color helpers (palette + bit-packing for the text-mode buffer).
      */
     System::VGA vga;
 
     /**
-     * This parameter is responsible for all text mode interactions.
+     * Text-mode controller — owns the 0xB8000 screen address.
      */
     System::Modes::Text textMode;
 
     /**
-     * This parameter is responsible for all video mode interactions.
+     * Video-mode placeholder (currently scaffolding only).
      */
     System::Modes::Video videoMode;
 
     /**
-     * This parameter is responsible for all interactions with the BIOS.
+     * BIOS bridge for real-mode interrupt calls.
      */
     System::Bios bios;
 
     /**
-     * This parameter is responsible for all interactions with the keyboard.
+     * Keyboard driver (PS/2 set-1).
      */
     System::Drivers::Keyboard keyboard;
 
     /**
-     * This parameter is responsible for all interactions with the GDT.
+     * GDT manager.
      */
     System::GDT gdt;
 
     /**
-     * This parameter is responsible for all interactions with the IDT.
+     * IDT manager.
      */
     System::IDT idt;
 
     /**
-     * This parameter is responsible for all interactions with the text cursor.
+     * Text cursor controller.
      */
     System::Cursor cursor;
 
@@ -97,35 +116,68 @@ public:
     /**
      * System::Shiro.Start()
      *
-     * This is our pseudo constructor, a starting point.
-     * Here we can implement the actual OS code.
-     * 
-     * @return void
+     * Pseudo-constructor. Brings every kernel subsystem online in order:
+     *   1. GDT       — descriptor tables for kernel & (scaffolded) user-mode
+     *   2. PIC       — remap legacy IRQs from 0x08-0x0F (collision) to 0x20-0x2F
+     *   3. IDT       — interrupt vectors 0..47 (CPU exceptions + hardware IRQs)
+     *   4. Timer     — PIT at 100 Hz (gives the kernel a notion of time)
+     *   5. Keyboard  — unmasks IRQ1
+     *   6. Text mode — exposes 0xB8000 to the rest of the kernel
+     *   7. VGA       — color palette helpers
+     *   8. STI       — finally, open the IF flag so interrupts start firing
      */
     void Start()
     {
         // Intro message
         log("> Welcome to Shiro - Operating System");
 
-        // Load our Global Descriptor Table
+        // 1. Global Descriptor Table.
         this->gdt.Start();
 
-        // Load our Interrupt Descriptor Table
+        // 2. Remap PICs to 0x20 (master) / 0x28 (slave). Must happen before
+        //    IDT::Start so that the gates we install for IRQs already point
+        //    at non-colliding vectors, and before any device unmasks itself.
+        System::PIC::Start();
+
+        // 3. Interrupt Descriptor Table — installs handlers for vectors
+        //    0..31 (exceptions) and 32..47 (hardware IRQs).
         this->idt.Start();
 
-        // Start Text Mode
+        // 3.5. Paging — identity-map 4 GiB with 4 MiB pages and turn on
+        //      the MMU. Must come after IDT so a misstep faults into our
+        //      Panic handler (vector 14) instead of a silent triple fault.
+        System::Paging::Start();
+
+        // 4. Programmable Interval Timer — IRQ0 at 100 Hz.
+        System::Drivers::Timer::Start();
+
+        // 5. Keyboard driver — unmasks IRQ1.
+        this->keyboard.Start();
+
+        // 6. Text Mode (memory-mapped 0xB8000).
         this->textMode.Start();
 
-        // Initializing VGA
+        // 7. VGA color helpers.
         this->vga.Start();
+
+        // 7.5. Cooperative scheduler. Brings up task table and registers
+        //      the currently-running flow as task 0 ("kernel"). No tasks
+        //      are spawned here; kernel.cpp does that after Shell::Start.
+        System::Scheduler::Start();
+
+        // 8. Open IF — only NOW are interrupts allowed to fire. Doing this
+        //    last avoids races where a half-initialized driver gets called
+        //    by an IRQ that arrives mid-Start.
+        asm volatile("sti");
+
+        log("> Interrupts enabled (IF=1)");
     }
 
     /**
      * System::Shiro.Finish()
      *
      * This is our pseudo destructor, a finishing point.
-     * Here we can implement our final routines before ending our OS execution.
-     * 
+     *
      * @return void
      */
     void Finish()

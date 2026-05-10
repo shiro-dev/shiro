@@ -62,6 +62,8 @@ public:
 
         // Flush
         GDTFlush((uint32_t) & this->ptr);
+
+        log("> GDT loaded (5 entries: null, kernel CS/DS, user CS/DS)");
     }
 
     /**

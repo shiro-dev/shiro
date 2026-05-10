@@ -86,7 +86,27 @@ public:
       SetGate(30, (uint32_t)isr30, 0x08, 0x8E);
       SetGate(31, (uint32_t)isr31, 0x08, 0x8E);
 
+      // Hardware IRQs after PIC remap (vectors 0x20..0x2F).
+      SetGate(32, (uint32_t)isr32, 0x08, 0x8E);
+      SetGate(33, (uint32_t)isr33, 0x08, 0x8E);
+      SetGate(34, (uint32_t)isr34, 0x08, 0x8E);
+      SetGate(35, (uint32_t)isr35, 0x08, 0x8E);
+      SetGate(36, (uint32_t)isr36, 0x08, 0x8E);
+      SetGate(37, (uint32_t)isr37, 0x08, 0x8E);
+      SetGate(38, (uint32_t)isr38, 0x08, 0x8E);
+      SetGate(39, (uint32_t)isr39, 0x08, 0x8E);
+      SetGate(40, (uint32_t)isr40, 0x08, 0x8E);
+      SetGate(41, (uint32_t)isr41, 0x08, 0x8E);
+      SetGate(42, (uint32_t)isr42, 0x08, 0x8E);
+      SetGate(43, (uint32_t)isr43, 0x08, 0x8E);
+      SetGate(44, (uint32_t)isr44, 0x08, 0x8E);
+      SetGate(45, (uint32_t)isr45, 0x08, 0x8E);
+      SetGate(46, (uint32_t)isr46, 0x08, 0x8E);
+      SetGate(47, (uint32_t)isr47, 0x08, 0x8E);
+
       IDTFlush((uint32_t)&ptr);
+
+      log("> IDT loaded with 48 vectors (0..31 exceptions, 32..47 IRQs)");
    }
 
    /**

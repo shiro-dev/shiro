@@ -6,68 +6,43 @@
 
 <br/>
 
-<img src="https://img.shields.io/badge/Version-v0.4-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Version-v0.5-green.svg" alt="Version">
 &nbsp;
-<img src="https://img.shields.io/badge/Date-2019/05/12-green.svg" alt="Version">
+<img src="https://img.shields.io/badge/Date-2026/05/10-green.svg" alt="Version">
 
 </p>
 
 ## How to get started?
-If you are using windows, make sure all files are LF instead of CRLF. 
 
-You can disable CRLF on Git by doing **(optional)**:
-```shell
-$ git config --global core.safecrlf false
-$ git config --global core.autocrlf false
-```
+Line endings are enforced by `.gitattributes`, so a fresh clone on any
+platform will check out with LF endings — no manual git config needed.
 
-To clone the project:
 ```shell
 $ git clone git@github.com:shiro-dev/shiro.git
 ```
 
 ## Requirements
 
-### Windows
-[QEMU emulator version 3.1.50+](https://qemu.weilnetz.de/w64/qemu-w64-setup-20190218.exe)
+- [Docker](https://docs.docker.com/get-docker/) (with the `docker compose` plugin)
+- A web browser (for the default `make run` — Shiro renders inside the
+  container and you view it at `http://localhost:6080/vnc.html`).
 
-[Docker version 18.03.0-ce+](https://hub.docker.com/editions/community/docker-ce-desktop-windows)
+Everything else — the cross-compiler (binutils + gcc + gdb for `i686-elf`),
+`nasm`, `xorriso`, `grub-pc-bin`, QEMU, and noVNC — lives inside the Docker
+image. No host-side installs.
 
-Docker Compose version 1.20.1+
+> Optional: if you already have `qemu-system-i386` on your host, `make run-host`
+> skips the VNC layer for a snappier display.
 
-### Ubuntu (not tested)
-QEMU emulator version 2.1.2+
+## Build & Run
+
 ```shell
-$ apt-get update -y
-$ apt-get install -y qemu
-```
-Docker
-```shell
-$ sudo apt-get update -y
-$ sudo apt-get install docker-ce
-$ sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-$ sudo chmod +x /usr/local/bin/docker-compose
-```
-If you need to set-up docker repository, please refer to [docker documentation](https://docs.docker.com/v17.09/engine/installation/linux/docker-ce/ubuntu/#install-docker-ce-1).
-
-Docker Compose
-```shell
-$ sudo apt-get update -y
-$ sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-$ sudo chmod +x /usr/local/bin/docker-compose
+$ make docker-build   # one-time, ~20-40 min (toolchain compile, then cached)
+$ make run            # builds the kernel and boots Shiro in the container
 ```
 
-## Build Environment
-This command will build the development environment on docker.
-```shell
-$ make docker-build
-```
-
-## Run Shiro
-This command will build/rebuild the OS on docker and will run it using QEMU.
-```shell
-$ make run
-```
+Then open <http://localhost:6080/vnc.html?autoconnect=1&resize=scale> to see
+the running OS. Stop the VM with `make stop-vm`.
 
 ## Special Thanks
 - [OSDev.org](https://osdev.org/)

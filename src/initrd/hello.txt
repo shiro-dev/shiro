@@ -1,0 +1,5 @@
+Hello, world.
+
+This file lives inside the kernel's ramdisk. The shell read it for you
+via the `cat` command, which reads from the in-memory filesystem the
+kernel exposes through System::Initrd.
